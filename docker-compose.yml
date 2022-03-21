@@ -1,0 +1,29 @@
+version: '3.0'
+
+services:
+  subscriptionapi:
+    build: .
+    ports:
+      - 8080:8080
+
+  database:
+    image: postgres:14.2-alpine3.15
+    environment:
+      POSTGRES_PASSWORD: secretpw
+      POSTGRES_USER: postgres
+      POSTGRES_DB: subscription
+    ports:
+      - 5432:5432
+    volumes:
+      - data-volume:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:6.7
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+     - 5053:80
+
+volumes:
+  data-volume:
