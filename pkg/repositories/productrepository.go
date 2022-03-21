@@ -3,7 +3,6 @@ package repositories
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/dnawand/go-subscriptionapi/pkg/domain"
@@ -23,12 +22,11 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 
 func (pr *ProductRepository) Save(product domain.Product) (domain.Product, error) {
 	now := time.Now()
-	productUUID, err := uuid.NewRandom()
+	productID, err := uuid.NewRandom()
 	if err != nil {
-		log.Printf("error when generating id for product: %s\n", err.Error())
 		return domain.Product{}, fmt.Errorf("error when generating id for user: %w", err)
 	}
-	product.ID = productUUID.String()
+	product.ID = productID.String()
 	product.CreatedAt = now
 	product.UpdatedAt = now
 
@@ -53,22 +51,24 @@ func (pr *ProductRepository) Save(product domain.Product) (domain.Product, error
 func (pr *ProductRepository) Get(productID string) (domain.Product, error) {
 	var product domain.Product
 
-	if tx := pr.db.Preload("SubscriptionPlans").First(&product, "id = ?", productID); tx.Error != nil {
+	if tx := pr.db.Preload("SubscriptionPlans").Find(&product, "id = ?", productID); tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return domain.Product{}, &domain.DataNotFoundError{DataType: "product"}
 		}
+		return domain.Product{}, fmt.Errorf("error when querying product: %w", tx.Error)
 	}
 
 	return product, nil
 }
 
 func (pr *ProductRepository) List() ([]domain.Product, error) {
-	var products []domain.Product
+	var products = []domain.Product{}
 
 	if tx := pr.db.Preload("SubscriptionPlans").Find(&products); tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) || len(products) == 0 {
 			return products, &domain.DataNotFoundError{DataType: "product list"}
 		}
+		return nil, fmt.Errorf("error when querying products: %w", tx.Error)
 	}
 
 	return products, nil

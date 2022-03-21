@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -33,6 +34,23 @@ func (ur *UserRepository) Save(user domain.User) (domain.User, error) {
 	user.UpdatedAt = now
 
 	ur.db.Create(&user)
+
+	return user, nil
+}
+
+func (ur *UserRepository) Get(userID string) (domain.User, error) {
+	var user domain.User
+
+	tx := ur.db.
+		Preload("Subscriptions.Product").
+		Preload("Subscriptions.SubscriptionPlan").
+		Find(&user, "id = ?", userID)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return domain.User{}, &domain.DataNotFoundError{DataType: "user"}
+		}
+		return domain.User{}, fmt.Errorf("error when querying user: %w", tx.Error)
+	}
 
 	return user, nil
 }

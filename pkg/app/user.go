@@ -17,3 +17,7 @@ func NewUserService(ur domain.UserRepository) *UserService {
 func (us *UserService) Create(user domain.User) (domain.User, error) {
 	return us.userRepository.Save(user)
 }
+
+func (us *UserService) Fetch(userID string) (domain.User, error) {
+	return us.userRepository.Get(userID)
+}

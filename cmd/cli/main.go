@@ -26,13 +26,16 @@ func main() {
 	logger := log.Default()
 
 	userRepository := repositories.NewUserRepository(dbConfig)
-	productrepository := repositories.NewProductRepository(dbConfig)
+	productRepository := repositories.NewProductRepository(dbConfig)
+	subscriptionRespository := repositories.NewSubscriptionRepository(dbConfig)
 
 	userService := app.NewUserService(userRepository)
-	productService := app.NewProductService(productrepository)
+	productService := app.NewProductService(productRepository)
+	subscriptionService := app.NewSubscriptionService(subscriptionRespository, userRepository, productRepository)
 
 	userHandler := handlers.NewUserHandler(logger, userService)
 	productHandler := handlers.NewProductHandler(logger, productService)
+	subscriptionHandler := handlers.NewSubscriptionHandler(logger, subscriptionService)
 
 	engine := gin.Default()
 
@@ -40,6 +43,9 @@ func main() {
 	engine.POST("/products", productHandler.Create)
 	engine.GET("/products/:product-id", productHandler.Fetch)
 	engine.GET("/products", productHandler.List)
+	engine.POST("/subscriptions", subscriptionHandler.Create)
+	engine.GET("/subscriptions/:subscription-id", subscriptionHandler.Fetch)
+	engine.GET("/users/:user-id/subscriptions", subscriptionHandler.List)
 
 	engine.Run()
 

@@ -2,6 +2,7 @@ package domain
 
 type UserRepository interface {
 	Save(User) (User, error)
+	Get(userID string) (User, error)
 }
 
 type ProductRepository interface {
@@ -11,7 +12,8 @@ type ProductRepository interface {
 }
 
 type SubscriptionRepository interface {
-	Save(Subscription) Subscription
-	Get(subscriptionID string) Subscription
-	Update(Subscription) Subscription
+	Save(User) (Subscription, error)
+	Get(subscriptionID string) (Subscription, error)
+	List(userID string) ([]Subscription, error)
+	Update(Subscription) (Subscription, error)
 }

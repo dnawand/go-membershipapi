@@ -2,6 +2,7 @@ package domain
 
 type UserService interface {
 	Create(User) (User, error)
+	Fetch(userID string) (User, error)
 }
 
 type ProductService interface {
@@ -11,7 +12,7 @@ type ProductService interface {
 }
 
 type SubscriptionService interface {
-	Subscribe(User, Product) (Subscription, error)
+	Subscribe(userID, productID, subscriptionPlanID string) (Subscription, error)
 	Fetch(subscriptionID string) (Subscription, error)
 	List(userID string) ([]Subscription, error)
 	Pause(subscriptionID string) (Subscription, error)

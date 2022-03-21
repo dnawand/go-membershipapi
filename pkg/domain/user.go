@@ -15,9 +15,3 @@ type User struct {
 	UpdatedAt     time.Time      `json:"-"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 }
-
-// BeforeCreate is a Gorm hook interface.
-// func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-// 	tx.Statement.SetColumn("ID", u.ID)
-// 	return
-// }

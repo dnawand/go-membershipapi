@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+var InternalError = fmt.Errorf("interal server error")
+
 type DataNotFoundError struct {
 	DataType string
 }
