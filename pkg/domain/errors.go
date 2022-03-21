@@ -1,15 +1,17 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 )
 
-var InternalError = fmt.Errorf("interal server error")
+var ErrInternal = errors.New("interal server error")
+var ErrForbidden = errors.New("forbidden")
 
-type DataNotFoundError struct {
+type ErrDataNotFound struct {
 	DataType string
 }
 
-func (e *DataNotFoundError) Error() string {
+func (e *ErrDataNotFound) Error() string {
 	return fmt.Sprintf("%s data not found", e.DataType)
 }

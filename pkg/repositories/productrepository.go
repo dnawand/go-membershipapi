@@ -53,7 +53,7 @@ func (pr *ProductRepository) Get(productID string) (domain.Product, error) {
 
 	if tx := pr.db.Preload("SubscriptionPlans").Find(&product, "id = ?", productID); tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return domain.Product{}, &domain.DataNotFoundError{DataType: "product"}
+			return domain.Product{}, &domain.ErrDataNotFound{DataType: "product"}
 		}
 		return domain.Product{}, fmt.Errorf("error when querying product: %w", tx.Error)
 	}
@@ -66,7 +66,7 @@ func (pr *ProductRepository) List() ([]domain.Product, error) {
 
 	if tx := pr.db.Preload("SubscriptionPlans").Find(&products); tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) || len(products) == 0 {
-			return products, &domain.DataNotFoundError{DataType: "product list"}
+			return products, &domain.ErrDataNotFound{DataType: "product list"}
 		}
 		return nil, fmt.Errorf("error when querying products: %w", tx.Error)
 	}

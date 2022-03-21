@@ -13,10 +13,10 @@ type Subscription struct {
 	SubscriptionPlan   SubscriptionPlan `json:"subscriptionPlan"`
 	SubscriptionPlanID string           `json:"-"`
 	StartDate          time.Time        `json:"startDate"`
-	EndDate            time.Time        `json:"endDate"`
+	EndDate            *time.Time       `json:"endDate,omitempty"`
 	PauseDate          *time.Time       `json:"pauseDate,omitempty"`
 	IsPaused           bool             `json:"paused"`
-	IsActive           bool             `json:"-"`
+	IsActive           bool             `json:"active"`
 	UserID             string           `json:"-" gorm:"type:uuid"`
 	CreatedAt          time.Time        `json:"-"`
 	UpdatedAt          time.Time        `json:"-"`

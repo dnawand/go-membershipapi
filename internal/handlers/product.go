@@ -49,7 +49,7 @@ func (h *ProductHandler) Fetch(c *gin.Context) {
 
 	product, err := h.ps.Fetch(productID)
 	if err != nil {
-		var dataNotFoundError *domain.DataNotFoundError
+		var dataNotFoundError *domain.ErrDataNotFound
 
 		if !errors.As(err, &dataNotFoundError) {
 			h.logger.Printf("error when fetching product: %s\n", err.Error())
@@ -70,7 +70,7 @@ func (h *ProductHandler) Fetch(c *gin.Context) {
 func (h *ProductHandler) List(c *gin.Context) {
 	products, err := h.ps.List()
 	if err != nil {
-		var dataNotFoundError *domain.DataNotFoundError
+		var dataNotFoundError *domain.ErrDataNotFound
 
 		if !errors.As(err, &dataNotFoundError) {
 			h.logger.Printf("error when listing products: %s\n", err.Error())

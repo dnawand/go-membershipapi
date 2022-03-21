@@ -47,7 +47,7 @@ func (ur *UserRepository) Get(userID string) (domain.User, error) {
 		Find(&user, "id = ?", userID)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return domain.User{}, &domain.DataNotFoundError{DataType: "user"}
+			return domain.User{}, &domain.ErrDataNotFound{DataType: "user"}
 		}
 		return domain.User{}, fmt.Errorf("error when querying user: %w", tx.Error)
 	}

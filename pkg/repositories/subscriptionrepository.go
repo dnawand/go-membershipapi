@@ -10,6 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	EndDate   domain.Column = "end_date"
+	PauseDate domain.Column = "pause_date"
+	IsPaused  domain.Column = "is_paused"
+	IsActive  domain.Column = "is_active"
+)
+
 type SubscriptionRepository struct {
 	db *gorm.DB
 }
@@ -54,7 +61,7 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 		Find(&subscription, "id = ?", subscriptionID)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return domain.Subscription{}, &domain.DataNotFoundError{DataType: "product"}
+			return domain.Subscription{}, &domain.ErrDataNotFound{DataType: "product"}
 		}
 	}
 
@@ -72,15 +79,27 @@ func (sr *SubscriptionRepository) List(userID string) ([]domain.Subscription, er
 		Find(&subscriptions)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) || len(subscriptions) == 0 {
-			return subscriptions, &domain.DataNotFoundError{DataType: "subscription list"}
+			return subscriptions, &domain.ErrDataNotFound{DataType: "subscription list"}
 		}
-
 		return nil, fmt.Errorf("error when querying subscriptions: %w", tx.Error)
 	}
 
 	return subscriptions, nil
 }
 
-func (sr *SubscriptionRepository) Update(subscription domain.Subscription) (domain.Subscription, error) {
-	panic("Implement me")
+func (sr *SubscriptionRepository) Update(subscription domain.Subscription, updates domain.ToUpdate) (domain.Subscription, error) {
+	colAndVal := map[string]interface{}{}
+
+	for k, v := range updates {
+		colAndVal[string(k)] = v
+	}
+
+	if tx := sr.db.Model(&subscription).Select("*").Updates(colAndVal); tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return domain.Subscription{}, &domain.ErrDataNotFound{DataType: "subscription"}
+		}
+		return domain.Subscription{}, fmt.Errorf("error when updating subscription: %w", tx.Error)
+	}
+
+	return subscription, nil
 }

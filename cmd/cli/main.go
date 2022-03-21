@@ -46,7 +46,7 @@ func main() {
 	engine.POST("/subscriptions", subscriptionHandler.Create)
 	engine.GET("/subscriptions/:subscription-id", subscriptionHandler.Fetch)
 	engine.GET("/users/:user-id/subscriptions", subscriptionHandler.List)
-
+	engine.PATCH("/subscriptions/:subscription-id", subscriptionHandler.Action)
 	engine.Run()
 
 	// router := mux.NewRouter()
