@@ -3,8 +3,11 @@ version: '3.0'
 services:
   subscriptionapi:
     build: .
+    environment:
+      GIN_MODE=release
     ports:
       - 8080:8080
+      - 8081:8081
 
   database:
     image: postgres:14.2-alpine3.15

@@ -29,7 +29,7 @@ func NewSubscriptionRepository(db *gorm.DB) *SubscriptionRepository {
 
 func (sr *SubscriptionRepository) Save(user domain.User) (domain.Subscription, error) {
 	if len(user.Subscriptions) != 1 {
-		return domain.Subscription{}, errors.New("user must have at least one subscription")
+		return domain.Subscription{}, &domain.ErrInvalidArgument{Msg: "user must have at least one subscription"}
 	}
 
 	now := time.Now()
@@ -46,7 +46,7 @@ func (sr *SubscriptionRepository) Save(user domain.User) (domain.Subscription, e
 
 	err = sr.db.Model(&user).Association("Subscriptions").Append(&pSubscription)
 	if err != nil {
-		return domain.Subscription{}, fmt.Errorf("could not save subscription: %w", err)
+		return domain.Subscription{}, fmt.Errorf("error when saving subscription: %w", err)
 	}
 
 	return user.Subscriptions[subscriptionIndex], nil
@@ -55,7 +55,7 @@ func (sr *SubscriptionRepository) Save(user domain.User) (domain.Subscription, e
 func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscription, error) {
 	var subscription domain.Subscription
 
-	tx := sr.db.Debug().
+	tx := sr.db.
 		Preload("Product").
 		Preload("SubscriptionPlan").
 		Find(&subscription, "id = ?", subscriptionID)
@@ -63,6 +63,7 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return domain.Subscription{}, &domain.ErrDataNotFound{DataType: "product"}
 		}
+		return domain.Subscription{}, fmt.Errorf("error when getting subscription from db: %w", tx.Error)
 	}
 
 	return subscription, nil

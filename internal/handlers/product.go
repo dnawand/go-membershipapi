@@ -2,19 +2,19 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/dnawand/go-subscriptionapi/pkg/domain"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type ProductHandler struct {
-	logger *log.Logger
+	logger *zap.Logger
 	ps     domain.ProductService
 }
 
-func NewProductHandler(logger *log.Logger, ps domain.ProductService) *ProductHandler {
+func NewProductHandler(logger *zap.Logger, ps domain.ProductService) *ProductHandler {
 	return &ProductHandler{
 		logger: logger,
 		ps:     ps,
@@ -25,19 +25,15 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	var product domain.Product
 
 	if err := c.ShouldBindJSON(&product); err != nil {
-		h.logger.Printf("error handling create product: %s\n", err.Error())
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		h.logger.Error("request binding error", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	user, err := h.ps.Create(product)
 	if err != nil {
-		h.logger.Printf("error when creating product: %s\n", err.Error())
-
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.logger.Error("error when creating product", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -52,15 +48,13 @@ func (h *ProductHandler) Fetch(c *gin.Context) {
 		var dataNotFoundError *domain.ErrDataNotFound
 
 		if !errors.As(err, &dataNotFoundError) {
-			h.logger.Printf("error when fetching product: %s\n", err.Error())
-
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			h.logger.Debug("product not found", zap.Error(err), zap.String("productId", productID))
+			c.JSON(http.StatusInternalServerError, gin.H{})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		h.logger.Error("error when fetching product", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -73,15 +67,13 @@ func (h *ProductHandler) List(c *gin.Context) {
 		var dataNotFoundError *domain.ErrDataNotFound
 
 		if !errors.As(err, &dataNotFoundError) {
-			h.logger.Printf("error when listing products: %s\n", err.Error())
-
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			h.logger.Debug("products not found", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		h.logger.Error("error when listing products", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 

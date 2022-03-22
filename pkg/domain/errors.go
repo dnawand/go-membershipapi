@@ -15,3 +15,11 @@ type ErrDataNotFound struct {
 func (e *ErrDataNotFound) Error() string {
 	return fmt.Sprintf("%s data not found", e.DataType)
 }
+
+type ErrInvalidArgument struct {
+	Msg string
+}
+
+func (e *ErrInvalidArgument) Error() string {
+	return fmt.Sprintf("%s data not found", e.Msg)
+}
