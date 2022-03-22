@@ -38,3 +38,11 @@ func (h *UserHandler) Create(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, user)
 }
+
+func (h *UserHandler) Fetch(c *gin.Context) {
+	userID := c.Param("user-id")
+	var user domain.User
+
+	user, _ = h.userService.Fetch(userID)
+	c.JSON(http.StatusOK, user)
+}

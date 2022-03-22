@@ -15,9 +15,9 @@ type SubscriptionHandler struct {
 }
 
 type subscribeRequest struct {
-	UserID             string `json:"userId" binding:"required"`
-	ProductID          string `json:"productId" binding:"required"`
-	SubscriptionPlanID string `json:"subscriptionPlanId" binding:"required"`
+	UserID        string `json:"userId" binding:"required"`
+	ProductID     string `json:"productId" binding:"required"`
+	ProductPlanID string `json:"planId" binding:"required"`
 }
 
 type action string
@@ -48,7 +48,7 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 		return
 	}
 
-	user, err := h.ss.Subscribe(request.UserID, request.ProductID, request.SubscriptionPlanID)
+	user, err := h.ss.Subscribe(request.UserID, request.ProductID, request.ProductPlanID, "")
 	if err != nil {
 		h.logger.Error("error when subscribing user to product", zap.Error(err), zap.Any("request", request))
 		c.JSON(http.StatusInternalServerError, gin.H{})

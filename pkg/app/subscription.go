@@ -9,11 +9,14 @@ import (
 	"github.com/dnawand/go-membershipapi/pkg/repositories"
 )
 
+const TrialPeriod = 1
+
 type SubscriptionService struct {
 	sr             domain.SubscriptionRepository
 	ur             domain.UserRepository
 	pr             domain.ProductRepository
 	voucherStorage *storage.Store
+	ds             domain.DiscountService
 }
 
 func NewSubscriptionService(
@@ -21,47 +24,24 @@ func NewSubscriptionService(
 	ur domain.UserRepository,
 	pr domain.ProductRepository,
 	vs *storage.Store,
+	ds domain.DiscountService,
 ) *SubscriptionService {
-	return &SubscriptionService{sr: sr, ur: ur, pr: pr, voucherStorage: vs}
+	return &SubscriptionService{sr: sr, ur: ur, pr: pr, voucherStorage: vs, ds: ds}
 }
 
-func (ss *SubscriptionService) Subscribe(userID, productID, subscriptionPlanID string) (subscription domain.Subscription, err error) {
-	var dataNotFoundErr *domain.ErrDataNotFound
-
-	user, err := ss.ur.Get(userID)
+func (ss *SubscriptionService) Subscribe(
+	userID, productID, productPlanID string,
+	voucherID string,
+) (subscription domain.Subscription, err error) {
+	subscription, err = ss.buildSubscription(userID, productID, productPlanID, voucherID)
 	if err != nil {
-		if errors.As(err, &dataNotFoundErr) {
-			return subscription, err
-		}
-		return subscription, domain.ErrInternal
+		return subscription, err
 	}
-
-	if subscription, ok := getSubscription(user, productID); ok {
+	if subscription.ID != "" {
 		return subscription, nil
 	}
 
-	now := time.Now()
-	product, err := ss.pr.Get(productID)
-	if err != nil {
-		if errors.As(err, &dataNotFoundErr) {
-			return domain.Subscription{}, err
-		}
-		return domain.Subscription{}, domain.ErrInternal
-	}
-
-	subscriptionPlan, ok := getSubscriptionPlan(subscriptionPlanID, product)
-	if !ok {
-		return subscription, &domain.ErrDataNotFound{DataType: "subscription plan"}
-	}
-
-	subscription = domain.Subscription{
-		ProductID: product.ID,
-		StartDate: now,
-		EndDate:   addMonths(now, subscriptionPlan.Length),
-		PauseDate: nil,
-		IsActive:  true,
-	}
-	user = domain.User{
+	user := domain.User{
 		ID:            userID,
 		Subscriptions: []domain.Subscription{subscription},
 	}
@@ -204,7 +184,99 @@ func (ss *SubscriptionService) Unsubscribe(subscriptionID string) (domain.Subscr
 	return subscription, nil
 }
 
-func getSubscriptionPlan(SubscriptionPlanID string, product domain.Product) (domain.ProductPlan, bool) {
+func (ss *SubscriptionService) buildSubscription(
+	userID, productID, productPlanID, voucherID string,
+) (subscription domain.Subscription, err error) {
+	var voucher domain.Voucher
+
+	if voucherID != "" {
+		v, ok := ss.validateVoucher(voucherID)
+		if !ok {
+			return domain.Subscription{}, &domain.ErrInvalidArgument{Msg: "invalid voucher"}
+		}
+		voucher = v
+	}
+
+	var dataNotFoundErr *domain.ErrDataNotFound
+
+	user, err := ss.ur.Get(userID)
+	if err != nil {
+		if errors.As(err, &dataNotFoundErr) {
+			return subscription, err
+		}
+		return subscription, domain.ErrInternal
+	}
+
+	if subscription, ok := getSubscription(user, productID); ok {
+		return subscription, nil
+	}
+
+	product, err := ss.pr.Get(productID)
+	if err != nil {
+		if errors.As(err, &dataNotFoundErr) {
+			return domain.Subscription{}, err
+		}
+		return domain.Subscription{}, domain.ErrInternal
+	}
+
+	productPlan, ok := getProductPlan(productPlanID, product)
+	if !ok {
+		return subscription, &domain.ErrDataNotFound{DataType: "product plan"}
+	}
+
+	price, err := ss.ds.ApplyDiscountOnPrice(productPlan.Price, voucher)
+	if err != nil {
+		return domain.Subscription{}, err
+	}
+	tax, err := ss.ds.ApplyDiscountOnTax(productPlan.Price, productPlan.Tax, voucher)
+	if err != nil {
+		return domain.Subscription{}, err
+	}
+
+	subscriptionPlan := domain.SubscriptionPlan{
+		Plan: &domain.Plan{
+			Length: productPlan.Length,
+			Price:  price,
+			Tax:    tax,
+		},
+		VoucherID: voucherID,
+	}
+	now := time.Now()
+	trialDate := addMonths(now, TrialPeriod)
+	startDate := trialDate.Add(1 * time.Hour)
+	endDate := addMonths(startDate, productPlan.Length)
+	subscription = domain.Subscription{
+		ProductID:        product.ID,
+		SubscriptionPlan: subscriptionPlan,
+		TrialDate:        trialDate,
+		StartDate:        startDate,
+		EndDate:          &endDate,
+		PauseDate:        nil,
+		IsActive:         true,
+	}
+
+	return subscription, err
+}
+
+func (ss *SubscriptionService) validateVoucher(voucherID string) (domain.Voucher, bool) {
+	if !ss.voucherStorage.Exist(voucherID) {
+		return domain.Voucher{}, false
+	}
+
+	v, _ := ss.voucherStorage.Load(voucherID)
+	voucher, ok := v.(domain.Voucher)
+	if !ok {
+		return domain.Voucher{}, false
+	}
+
+	if !voucher.IsActive {
+		return domain.Voucher{}, false
+	}
+
+	return voucher, true
+}
+
+func getProductPlan(SubscriptionPlanID string, product domain.Product) (domain.ProductPlan, bool) {
 	for _, p := range product.ProductPlans {
 		if p.ID == SubscriptionPlanID {
 			return p, true
@@ -224,7 +296,7 @@ func getSubscription(user domain.User, productID string) (domain.Subscription, b
 	return domain.Subscription{}, false
 }
 
-func addMonths(t time.Time, months int) *time.Time {
+func addMonths(t time.Time, months int) time.Time {
 	endDate := t.AddDate(0, months, 0)
-	return &endDate
+	return endDate
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dnawand/go-membershipapi/internal/storage"
 	"github.com/dnawand/go-membershipapi/pkg/domain"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -18,12 +19,14 @@ const (
 )
 
 type SubscriptionRepository struct {
-	db *gorm.DB
+	db             *gorm.DB
+	voucherStorage *storage.Store
 }
 
-func NewSubscriptionRepository(db *gorm.DB) *SubscriptionRepository {
+func NewSubscriptionRepository(db *gorm.DB, vs *storage.Store) *SubscriptionRepository {
 	return &SubscriptionRepository{
-		db: db,
+		db:             db,
+		voucherStorage: vs,
 	}
 }
 
@@ -34,17 +37,30 @@ func (sr *SubscriptionRepository) Save(user domain.User) (domain.Subscription, e
 
 	now := time.Now()
 	subscriptionIndex := 0
-	subscriptionID, err := uuid.NewRandom()
+	subscriptionID, subscriptionPlanID, err := generateIDs()
 	if err != nil {
-		return domain.Subscription{}, fmt.Errorf("error when generating id for user: %w", err)
+		return domain.Subscription{}, domain.ErrInternal
 	}
 
-	user.Subscriptions[subscriptionIndex].ID = subscriptionID.String()
+	user.Subscriptions[subscriptionIndex].ID = subscriptionID
 	user.Subscriptions[subscriptionIndex].CreatedAt = now
 	user.Subscriptions[subscriptionIndex].UpdatedAt = now
-	pSubscription := user.Subscriptions[subscriptionIndex]
+	user.Subscriptions[subscriptionIndex].SubscriptionPlan.ID = subscriptionPlanID
+	productSubscription := user.Subscriptions[subscriptionIndex]
 
-	err = sr.db.Model(&user).Association("Subscriptions").Append(&pSubscription)
+	err = sr.db.Transaction(func(tx *gorm.DB) error {
+		txErr := tx.Model(&user).Association("Subscriptions").Append(&productSubscription)
+		if txErr != nil {
+			return txErr
+		}
+
+		txErr = tx.Model(&productSubscription).Association("SubscriptionPlan").Append(&productSubscription.SubscriptionPlan)
+		if txErr != nil {
+			return txErr
+		}
+
+		return nil
+	})
 	if err != nil {
 		return domain.Subscription{}, fmt.Errorf("error when saving subscription: %w", err)
 	}
@@ -57,7 +73,7 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 
 	tx := sr.db.
 		Preload("Product").
-		Preload("ProductPlans").
+		Preload("SubscriptionPlan").
 		Find(&subscription, "id = ?", subscriptionID)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -65,6 +81,10 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 		}
 		return domain.Subscription{}, fmt.Errorf("error when getting subscription from db: %w", tx.Error)
 	}
+
+	data, _ := sr.voucherStorage.Load(subscription.SubscriptionPlan.VoucherID)
+	voucher, _ := data.(domain.Voucher)
+	subscription.SubscriptionPlan.Voucher = voucher
 
 	return subscription, nil
 }
@@ -74,7 +94,7 @@ func (sr *SubscriptionRepository) List(userID string) ([]domain.Subscription, er
 
 	tx := sr.db.
 		Preload("Product").
-		Preload("ProductPlans").
+		Preload("SubscriptionPlan").
 		Joins("right join users on users.id = subscriptions.user_id").
 		Where("user_id = ?", userID).
 		Find(&subscriptions)
@@ -103,4 +123,18 @@ func (sr *SubscriptionRepository) Update(subscription domain.Subscription, updat
 	}
 
 	return subscription, nil
+}
+
+func generateIDs() (string, string, error) {
+	subscriptionUUID, err := uuid.NewRandom()
+	if err != nil {
+		return "", "", fmt.Errorf("error when generating id for subscription: %w", err)
+	}
+
+	subscriptionPlanUUID, err := uuid.NewRandom()
+	if err != nil {
+		return "", "", fmt.Errorf("error when generating id for subscription plan: %w", err)
+	}
+
+	return subscriptionUUID.String(), subscriptionPlanUUID.String(), nil
 }

@@ -12,10 +12,15 @@ type ProductService interface {
 }
 
 type SubscriptionService interface {
-	Subscribe(userID, productID, subscriptionPlanID string) (Subscription, error)
+	Subscribe(userID, productID, productPlanID string, voucherID string) (Subscription, error)
 	Fetch(subscriptionID string) (Subscription, error)
 	List(userID string) ([]Subscription, error)
 	Pause(subscriptionID string) (Subscription, error)
 	Resume(subscriptionID string) (Subscription, error)
 	Unsubscribe(subscriptionID string) (Subscription, error)
+}
+
+type DiscountService interface {
+	ApplyDiscountOnPrice(price Money, v Voucher) (Money, error)
+	ApplyDiscountOnTax(price Money, tax Money, v Voucher) (Money, error)
 }

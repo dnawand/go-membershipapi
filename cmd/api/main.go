@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 //go:embed swagger
@@ -34,17 +35,22 @@ func main() {
 
 	dbConfig, err := dbConfig()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("could not initialize database configuration", zap.Error(err))
+		logger.Sync()
+		os.Exit(1)
 	}
 
+	voucherStorage := loadVouchers()
 	userRepository := repositories.NewUserRepository(dbConfig)
 	productRepository := repositories.NewProductRepository(dbConfig)
-	subscriptionRespository := repositories.NewSubscriptionRepository(dbConfig)
+	subscriptionRespository := repositories.NewSubscriptionRepository(dbConfig, voucherStorage)
 
 	userService := app.NewUserService(userRepository)
 	productService := app.NewProductService(productRepository)
-	voucherStorage := loadVouchers()
-	subscriptionService := app.NewSubscriptionService(subscriptionRespository, userRepository, productRepository, voucherStorage)
+	discountService := app.NewDiscountService()
+	subscriptionService := app.NewSubscriptionService(
+		subscriptionRespository, userRepository, productRepository, voucherStorage, discountService,
+	)
 
 	userHandler := handlers.NewUserHandler(logger, userService)
 	productHandler := handlers.NewProductHandler(logger, productService)
@@ -53,6 +59,7 @@ func main() {
 	router := gin.Default()
 
 	router.POST("/users", userHandler.Create)
+	router.GET("/users/:user-id", userHandler.Fetch)
 	router.POST("/products", productHandler.Create)
 	router.GET("/products/:product-id", productHandler.Fetch)
 	router.GET("/products", productHandler.List)
@@ -82,14 +89,14 @@ func main() {
 	if !ok {
 		logger.Info("server forced to shutdown")
 		logger.Sync()
-		log.Fatal("server exiting")
+		os.Exit(1)
 	}
 
 	logger.Info("server exiting")
 }
 
 func zapConfig() *zap.Logger {
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("could not initialize zao logger: %v", err)
 	}
@@ -98,16 +105,19 @@ func zapConfig() *zap.Logger {
 }
 
 func dbConfig() (*gorm.DB, error) {
-	dsn := "host=localhost user=postgres password=secretpw dbname=subscription port=5432 sslmode=disable"
-	cfg := &gorm.Config{}
+	dsn := "host=localhost user=postgres password=secretpw dbname=membership port=5432 sslmode=disable"
+	cfg := &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Error),
+	}
 	db, err := gorm.Open(postgres.Open(dsn), cfg)
 	if err != nil {
-		return nil, fmt.Errorf("could not get db config: %w", err)
+		return nil, err
 	}
 
 	err = db.AutoMigrate(
 		domain.User{},
-		domain.Plan{},
+		domain.ProductPlan{},
+		domain.SubscriptionPlan{},
 		domain.Product{},
 		domain.Subscription{},
 	)
@@ -125,7 +135,7 @@ func loadVouchers() *storage.Store {
 	voucherFixedAmount := domain.Voucher{
 		ID:       id.String(),
 		Type:     domain.VoucherFixedAmount,
-		Discount: 5,
+		Discount: "5",
 		IsActive: true,
 	}
 
@@ -133,7 +143,7 @@ func loadVouchers() *storage.Store {
 	voucherPercentage := domain.Voucher{
 		ID:       id.String(),
 		Type:     domain.VoucherPercentage,
-		Discount: 10,
+		Discount: "10",
 		IsActive: true,
 	}
 
@@ -141,7 +151,7 @@ func loadVouchers() *storage.Store {
 	voucherInactive := domain.Voucher{
 		ID:       id.String(),
 		Type:     domain.VoucherPercentage,
-		Discount: 10,
+		Discount: "10",
 		IsActive: false,
 	}
 
