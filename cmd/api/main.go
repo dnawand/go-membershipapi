@@ -19,7 +19,6 @@ import (
 	"github.com/dnawand/go-membershipapi/pkg/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -56,6 +55,25 @@ func main() {
 	productHandler := handlers.NewProductHandler(logger, productService)
 	subscriptionHandler := handlers.NewSubscriptionHandler(logger, subscriptionService)
 
+	router := configRouter(userHandler, productHandler, subscriptionHandler)
+
+	server, fileServer := serversConfig(router)
+
+	ok := gracefulRun(server, fileServer, logger)
+	if !ok {
+		logger.Info("server forced to shutdown")
+		logger.Sync()
+		os.Exit(1)
+	}
+
+	logger.Info("server exiting")
+}
+
+func configRouter(
+	userHandler *handlers.UserHandler,
+	productHandler *handlers.ProductHandler,
+	subscriptionHandler *handlers.SubscriptionHandler,
+) *gin.Engine {
 	router := gin.Default()
 
 	router.POST("/users", userHandler.Create)
@@ -68,31 +86,28 @@ func main() {
 	router.GET("/users/:user-id/subscriptions", subscriptionHandler.List)
 	router.PATCH("/subscriptions/:subscription-id", subscriptionHandler.Action)
 
-	server := &http.Server{
+	return router
+}
+
+func serversConfig(router *gin.Engine) (server *http.Server, fileServer *http.Server) {
+	server = &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
 
-	fileRouter := mux.NewRouter()
-	fileRouter.PathPrefix("/swagger").Handler(http.FileServer(http.FS(swagger))).Methods(http.MethodGet)
+	mux := http.NewServeMux()
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.FS(swagger))))
 
-	fileServer := &http.Server{
+	fileServer = &http.Server{
 		Addr:         ":8081",
-		Handler:      fileRouter,
+		Handler:      mux,
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
 	}
 
-	ok := gracefulRun(server, fileServer, logger)
-	if !ok {
-		logger.Info("server forced to shutdown")
-		logger.Sync()
-		os.Exit(1)
-	}
-
-	logger.Info("server exiting")
+	return server, fileServer
 }
 
 func zapConfig() *zap.Logger {
