@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -57,7 +57,7 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 
 	tx := sr.db.
 		Preload("Product").
-		Preload("SubscriptionPlan").
+		Preload("ProductPlans").
 		Find(&subscription, "id = ?", subscriptionID)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
@@ -74,7 +74,7 @@ func (sr *SubscriptionRepository) List(userID string) ([]domain.Subscription, er
 
 	tx := sr.db.
 		Preload("Product").
-		Preload("SubscriptionPlan").
+		Preload("ProductPlans").
 		Joins("right join users on users.id = subscriptions.user_id").
 		Where("user_id = ?", userID).
 		Find(&subscriptions)

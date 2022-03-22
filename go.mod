@@ -1,4 +1,4 @@
-module github.com/dnawand/go-subscriptionapi
+module github.com/dnawand/go-membershipapi
 
 go 1.17
 

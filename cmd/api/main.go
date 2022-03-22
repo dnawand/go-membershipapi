@@ -12,11 +12,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dnawand/go-subscriptionapi/internal/handlers"
-	"github.com/dnawand/go-subscriptionapi/pkg/app"
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
-	"github.com/dnawand/go-subscriptionapi/pkg/repositories"
+	"github.com/dnawand/go-membershipapi/internal/handlers"
+	"github.com/dnawand/go-membershipapi/internal/storage"
+	"github.com/dnawand/go-membershipapi/pkg/app"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/repositories"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
@@ -41,7 +43,8 @@ func main() {
 
 	userService := app.NewUserService(userRepository)
 	productService := app.NewProductService(productRepository)
-	subscriptionService := app.NewSubscriptionService(subscriptionRespository, userRepository, productRepository)
+	voucherStorage := loadVouchers()
+	subscriptionService := app.NewSubscriptionService(subscriptionRespository, userRepository, productRepository, voucherStorage)
 
 	userHandler := handlers.NewUserHandler(logger, userService)
 	productHandler := handlers.NewProductHandler(logger, productService)
@@ -104,7 +107,7 @@ func dbConfig() (*gorm.DB, error) {
 
 	err = db.AutoMigrate(
 		domain.User{},
-		domain.SubscriptionPlan{},
+		domain.Plan{},
 		domain.Product{},
 		domain.Subscription{},
 	)
@@ -113,6 +116,40 @@ func dbConfig() (*gorm.DB, error) {
 	}
 
 	return db, err
+}
+
+func loadVouchers() *storage.Store {
+	voucherStorage := storage.NewStore()
+
+	id, _ := uuid.NewRandom()
+	voucherFixedAmount := domain.Voucher{
+		ID:       id.String(),
+		Type:     domain.VoucherFixedAmount,
+		Discount: 5,
+		IsActive: true,
+	}
+
+	id, _ = uuid.NewRandom()
+	voucherPercentage := domain.Voucher{
+		ID:       id.String(),
+		Type:     domain.VoucherPercentage,
+		Discount: 10,
+		IsActive: true,
+	}
+
+	id, _ = uuid.NewRandom()
+	voucherInactive := domain.Voucher{
+		ID:       id.String(),
+		Type:     domain.VoucherPercentage,
+		Discount: 10,
+		IsActive: false,
+	}
+
+	voucherStorage.Save(voucherFixedAmount.ID, voucherFixedAmount)
+	voucherStorage.Save(voucherPercentage.ID, voucherPercentage)
+	voucherStorage.Save(voucherInactive.ID, voucherInactive)
+
+	return voucherStorage
 }
 
 func gracefulRun(server *http.Server, fileServer *http.Server, logger *zap.Logger) (ok bool) {

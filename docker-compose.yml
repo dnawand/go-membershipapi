@@ -4,7 +4,7 @@ services:
   subscriptionapi:
     build: .
     environment:
-      GIN_MODE=release
+      GIN_MODE: release
     ports:
       - 8080:8080
       - 8081:8081
@@ -14,7 +14,7 @@ services:
     environment:
       POSTGRES_PASSWORD: secretpw
       POSTGRES_USER: postgres
-      POSTGRES_DB: subscription
+      POSTGRES_DB: membership
     ports:
       - 5432:5432
     volumes:

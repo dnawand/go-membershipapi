@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

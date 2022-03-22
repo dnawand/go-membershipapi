@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
 )
 
 type UserService struct {

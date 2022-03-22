@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

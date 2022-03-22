@@ -4,18 +4,25 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dnawand/go-subscriptionapi/pkg/domain"
-	"github.com/dnawand/go-subscriptionapi/pkg/repositories"
+	"github.com/dnawand/go-membershipapi/internal/storage"
+	"github.com/dnawand/go-membershipapi/pkg/domain"
+	"github.com/dnawand/go-membershipapi/pkg/repositories"
 )
 
 type SubscriptionService struct {
-	sr domain.SubscriptionRepository
-	ur domain.UserRepository
-	pr domain.ProductRepository
+	sr             domain.SubscriptionRepository
+	ur             domain.UserRepository
+	pr             domain.ProductRepository
+	voucherStorage *storage.Store
 }
 
-func NewSubscriptionService(sr domain.SubscriptionRepository, ur domain.UserRepository, pr domain.ProductRepository) *SubscriptionService {
-	return &SubscriptionService{sr: sr, ur: ur, pr: pr}
+func NewSubscriptionService(
+	sr domain.SubscriptionRepository,
+	ur domain.UserRepository,
+	pr domain.ProductRepository,
+	vs *storage.Store,
+) *SubscriptionService {
+	return &SubscriptionService{sr: sr, ur: ur, pr: pr, voucherStorage: vs}
 }
 
 func (ss *SubscriptionService) Subscribe(userID, productID, subscriptionPlanID string) (subscription domain.Subscription, err error) {
@@ -48,12 +55,11 @@ func (ss *SubscriptionService) Subscribe(userID, productID, subscriptionPlanID s
 	}
 
 	subscription = domain.Subscription{
-		ProductID:          product.ID,
-		SubscriptionPlanID: subscriptionPlan.ID,
-		StartDate:          now,
-		EndDate:            addMonths(now, subscriptionPlan.Length),
-		PauseDate:          nil,
-		IsActive:           true,
+		ProductID: product.ID,
+		StartDate: now,
+		EndDate:   addMonths(now, subscriptionPlan.Length),
+		PauseDate: nil,
+		IsActive:  true,
 	}
 	user = domain.User{
 		ID:            userID,
@@ -198,14 +204,14 @@ func (ss *SubscriptionService) Unsubscribe(subscriptionID string) (domain.Subscr
 	return subscription, nil
 }
 
-func getSubscriptionPlan(SubscriptionPlanID string, product domain.Product) (domain.SubscriptionPlan, bool) {
-	for _, sp := range product.SubscriptionPlans {
-		if sp.ID == SubscriptionPlanID {
-			return sp, true
+func getSubscriptionPlan(SubscriptionPlanID string, product domain.Product) (domain.ProductPlan, bool) {
+	for _, p := range product.ProductPlans {
+		if p.ID == SubscriptionPlanID {
+			return p, true
 		}
 	}
 
-	return domain.SubscriptionPlan{}, false
+	return domain.ProductPlan{}, false
 }
 
 func getSubscription(user domain.User, productID string) (domain.Subscription, bool) {
