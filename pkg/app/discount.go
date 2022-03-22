@@ -39,7 +39,7 @@ func (ds *DiscountService) ApplyDiscountOnTax(price domain.Money, tax domain.Mon
 func applyFixedAmount(price domain.Money, voucher domain.Voucher) (domain.Money, error) {
 	priceAmount, err := currency.NewAmount(price.Number, string(price.Code))
 	if err != nil {
-		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %w", err)}
+		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %v", err)}
 	}
 
 	discountAmount, _ := currency.NewAmount(voucher.Discount, string(price.Code))
@@ -51,7 +51,7 @@ func applyFixedAmount(price domain.Money, voucher domain.Voucher) (domain.Money,
 func applyPercentage(price domain.Money, voucher domain.Voucher) (domain.Money, error) {
 	priceAmount, err := currency.NewAmount(price.Number, string(price.Code))
 	if err != nil {
-		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %w", err)}
+		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %v", err)}
 	}
 
 	pivot, _ := currency.NewAmount(voucher.Discount, string(price.Code))
