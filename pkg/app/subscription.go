@@ -59,7 +59,7 @@ func (ss *SubscriptionService) Subscribe(
 	return subscription, nil
 }
 
-func (ss *SubscriptionService) Fetch(subscriptionID string) (domain.Subscription, error) {
+func (ss *SubscriptionService) Fetch(userID, subscriptionID string) (domain.Subscription, error) {
 	return ss.sr.Get(subscriptionID)
 }
 
@@ -67,23 +67,27 @@ func (ss *SubscriptionService) List(userID string) ([]domain.Subscription, error
 	return ss.sr.List(userID)
 }
 
-func (ss *SubscriptionService) Pause(subscriptionID string) (domain.Subscription, error) {
+func (ss *SubscriptionService) Pause(userID, subscriptionID string) (domain.Subscription, error) {
 	var dataNotFoundErr *domain.ErrDataNotFound
 
 	subscription, err := ss.sr.Get(subscriptionID)
 	if err != nil {
 		if errors.As(err, &dataNotFoundErr) {
-			return subscription, err
+			return domain.Subscription{}, err
 		}
-		return subscription, domain.ErrInternal
+		return domain.Subscription{}, domain.ErrInternal
 	}
 
 	if !subscription.IsActive {
-		return subscription, domain.ErrForbidden
+		return domain.Subscription{}, domain.ErrForbidden
 	}
 
 	if subscription.IsPaused {
 		return subscription, nil
+	}
+
+	if onTrial(subscription.TrialDate) {
+		return domain.Subscription{}, domain.ErrForbidden
 	}
 
 	now := time.Now()
@@ -108,19 +112,19 @@ func (ss *SubscriptionService) Pause(subscriptionID string) (domain.Subscription
 	return subscription, nil
 }
 
-func (ss *SubscriptionService) Resume(subscriptionID string) (domain.Subscription, error) {
+func (ss *SubscriptionService) Resume(userID, subscriptionID string) (domain.Subscription, error) {
 	var dataNotFoundErr *domain.ErrDataNotFound
 
 	subscription, err := ss.sr.Get(subscriptionID)
 	if err != nil {
 		if errors.As(err, &dataNotFoundErr) {
-			return subscription, err
+			return domain.Subscription{}, err
 		}
-		return subscription, domain.ErrForbidden
+		return domain.Subscription{}, domain.ErrForbidden
 	}
 
 	if !subscription.IsActive {
-		return subscription, domain.ErrForbidden
+		return domain.Subscription{}, domain.ErrForbidden
 	}
 
 	if !subscription.IsPaused {
@@ -152,15 +156,15 @@ func (ss *SubscriptionService) Resume(subscriptionID string) (domain.Subscriptio
 	return subscription, nil
 }
 
-func (ss *SubscriptionService) Unsubscribe(subscriptionID string) (domain.Subscription, error) {
+func (ss *SubscriptionService) Unsubscribe(userID, subscriptionID string) (domain.Subscription, error) {
 	var dataNotFoundErr *domain.ErrDataNotFound
 
 	subscription, err := ss.sr.Get(subscriptionID)
 	if err != nil {
 		if errors.As(err, &dataNotFoundErr) {
-			return subscription, err
+			return domain.Subscription{}, err
 		}
-		return subscription, domain.ErrInternal
+		return domain.Subscription{}, domain.ErrInternal
 	}
 
 	if !subscription.IsActive {
@@ -187,7 +191,7 @@ func (ss *SubscriptionService) Unsubscribe(subscriptionID string) (domain.Subscr
 func (ss *SubscriptionService) buildSubscription(
 	userID, productID, productPlanID, voucherID string,
 ) (subscription domain.Subscription, err error) {
-	var voucher domain.Voucher
+	voucher := domain.Voucher{Type: domain.VoucherFixedAmount}
 
 	if voucherID != "" {
 		v, ok := ss.validateVoucher(voucherID)
@@ -243,8 +247,8 @@ func (ss *SubscriptionService) buildSubscription(
 	}
 	now := time.Now()
 	trialDate := addMonths(now, TrialPeriod)
-	startDate := trialDate.Add(1 * time.Hour)
-	endDate := addMonths(startDate, productPlan.Length)
+	startDate := now
+	endDate := addMonths(trialDate, productPlan.Length)
 	subscription = domain.Subscription{
 		ProductID:        product.ID,
 		SubscriptionPlan: subscriptionPlan,
@@ -299,4 +303,8 @@ func getSubscription(user domain.User, productID string) (domain.Subscription, b
 func addMonths(t time.Time, months int) time.Time {
 	endDate := t.AddDate(0, months, 0)
 	return endDate
+}
+
+func onTrial(trialDate time.Time) bool {
+	return trialDate.After(time.Now())
 }
