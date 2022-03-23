@@ -57,4 +57,5 @@ You want to do it manually, use the commands:
 
 ## Improvement
 
-Other componets could be added in general. Eg.: middlware for authentication, propagation of logging and context, etc.
+Other componets could be added in general. Eg.: middleware for authentication, propagation of logging and context, 
+more unity tests, etc.
