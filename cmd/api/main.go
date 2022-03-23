@@ -117,7 +117,28 @@ func zapConfig() *zap.Logger {
 }
 
 func dbConfig() (*gorm.DB, error) {
-	dsn := "host=localhost user=postgres password=secretpw dbname=membership port=5432 sslmode=disable"
+	host, ok := os.LookupEnv("DB_HOST")
+	if !ok {
+		host = "localhost"
+	}
+	port, ok := os.LookupEnv("DB_PORT")
+	if !ok {
+		port = "5432"
+	}
+	name, ok := os.LookupEnv("DB_NAME")
+	if !ok {
+		name = "membership"
+	}
+	user, ok := os.LookupEnv("DB_USER")
+	if !ok {
+		user = "postgres"
+	}
+	password, ok := os.LookupEnv("DB_PW")
+	if !ok {
+		password = "secretpw"
+	}
+
+	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, port, name, user, password)
 	cfg := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	}
