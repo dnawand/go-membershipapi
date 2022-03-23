@@ -10,9 +10,13 @@ services:
       DB_NAME: membership
       DB_USER: postgres
       DB_PW: secretpw
+      ALLOW_PAUSE_ON_TRIAL: ""
     ports:
       - 8080:8080
       - 8081:8081
+    depends_on:
+      - database
+    restart: on-failure
 
   database:
     image: postgres:14.2-alpine3.15
