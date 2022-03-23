@@ -13,11 +13,11 @@ type ProductService interface {
 
 type SubscriptionService interface {
 	Subscribe(userID, productID, productPlanID string, voucherID string) (Subscription, error)
-	Fetch(subscriptionID string) (Subscription, error)
+	Fetch(userID, subscriptionID string) (Subscription, error)
 	List(userID string) ([]Subscription, error)
-	Pause(subscriptionID string) (Subscription, error)
-	Resume(subscriptionID string) (Subscription, error)
-	Unsubscribe(subscriptionID string) (Subscription, error)
+	Pause(userID, subscriptionID string) (Subscription, error)
+	Resume(userID, subscriptionID string) (Subscription, error)
+	Unsubscribe(userID, subscriptionID string) (Subscription, error)
 }
 
 type DiscountService interface {

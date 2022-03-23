@@ -46,15 +46,16 @@ func (sr *SubscriptionRepository) Save(user domain.User) (domain.Subscription, e
 	user.Subscriptions[subscriptionIndex].CreatedAt = now
 	user.Subscriptions[subscriptionIndex].UpdatedAt = now
 	user.Subscriptions[subscriptionIndex].SubscriptionPlan.ID = subscriptionPlanID
-	productSubscription := user.Subscriptions[subscriptionIndex]
+	userSubscription := user.Subscriptions[subscriptionIndex]
+	userSubscription.SubscriptionPlan.SubscriptionID = userSubscription.ID
 
 	err = sr.db.Transaction(func(tx *gorm.DB) error {
-		txErr := tx.Model(&user).Association("Subscriptions").Append(&productSubscription)
+		txErr := tx.Model(&user).Association("Subscriptions").Append(&userSubscription)
 		if txErr != nil {
 			return txErr
 		}
 
-		txErr = tx.Model(&productSubscription).Association("SubscriptionPlan").Append(&productSubscription.SubscriptionPlan)
+		txErr = tx.Model(&userSubscription).Association("SubscriptionPlan").Append(&userSubscription.SubscriptionPlan)
 		if txErr != nil {
 			return txErr
 		}
@@ -82,9 +83,11 @@ func (sr *SubscriptionRepository) Get(subscriptionID string) (domain.Subscriptio
 		return domain.Subscription{}, fmt.Errorf("error when getting subscription from db: %w", tx.Error)
 	}
 
-	data, _ := sr.voucherStorage.Load(subscription.SubscriptionPlan.VoucherID)
-	voucher, _ := data.(domain.Voucher)
-	subscription.SubscriptionPlan.Voucher = voucher
+	data, ok := sr.voucherStorage.Load(subscription.SubscriptionPlan.VoucherID)
+	if ok {
+		voucher, _ := data.(domain.Voucher)
+		subscription.SubscriptionPlan.Voucher = &voucher
+	}
 
 	return subscription, nil
 }
