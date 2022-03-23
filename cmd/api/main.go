@@ -194,7 +194,7 @@ func gracefulRun(server *http.Server, fileServer *http.Server, logger *zap.Logge
 		}
 	}()
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
