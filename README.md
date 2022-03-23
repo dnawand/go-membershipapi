@@ -7,11 +7,11 @@ The API will run on `localhost:8080` and `localhost:8081` in order to serve the 
 ### Local
 
 With a postgres instance running, set this environment variables in order to allow the service to connect to database:
-`DB_HOST` - defaults to `localhost`
-`DB_PORT` - defaults to `5432`
-`DB_NAME` - defaults to `membership`
-`DB_USER` - defaults to `postgres`
-`DB_PW` - defaults to `secretpw`
+- `DB_HOST` - defaults to `localhost`
+- `DB_PORT` - defaults to `5432`
+- `DB_NAME` - defaults to `membership`
+- `DB_USER` - defaults to `postgres`
+- `DB_PW` - defaults to `secretpw`
 
 Then run with `go build cmd/api/main.go`, and then `./main`.
 
@@ -37,8 +37,8 @@ The API will keep restarting until it connects to the database.
 
 You can get the API documentation as swagger by two means:
 
-1 - inside the `cmd/api/swagger` there will be a `swagger.jon` file.
-2 - after running the API, access `localhost:8081/swagger/swagger/` on a browser.
+1. inside the `cmd/api/swagger` there will be a `swagger.jon` file.
+2. after running the API, access `localhost:8081/swagger/swagger/` on a browser.
 
 Also, there are a postman collection and environment that you can import. It's in `collection` folder.
 
@@ -52,8 +52,8 @@ If are in a environment with Make installed, run `make updbtest`.
 Then, after the database is ready, run `make test`.
 
 You want to do it manually, use the commands:
-`docker-compose up -d databasetest`
-`DB_HOST=localhost DB_PORT=5433 DB_NAME=membership DB_USER=tester DB_PW=secretpw go test -v -cover -count=1 ./...`
+- `docker-compose up -d databasetest`
+- `DB_HOST=localhost DB_PORT=5433 DB_NAME=membership DB_USER=tester DB_PW=secretpw go test -v -cover -count=1 ./...`
 
 ## Improvement
 
