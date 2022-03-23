@@ -15,9 +15,9 @@ type SubscriptionHandler struct {
 }
 
 type subscribeRequest struct {
-	UserID        string `json:"userId" binding:"required"`
 	ProductID     string `json:"productId" binding:"required"`
 	ProductPlanID string `json:"planId" binding:"required"`
+	VoucherID     string `json:"voucherId"`
 }
 
 type action string
@@ -40,6 +40,7 @@ func NewSubscriptionHandler(logger *zap.Logger, ss domain.SubscriptionService) *
 }
 
 func (h *SubscriptionHandler) Create(c *gin.Context) {
+	userID := c.Param("user-id")
 	var request subscribeRequest
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -48,8 +49,23 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 		return
 	}
 
-	user, err := h.ss.Subscribe(request.UserID, request.ProductID, request.ProductPlanID, "")
+	user, err := h.ss.Subscribe(userID, request.ProductID, request.ProductPlanID, request.VoucherID)
 	if err != nil {
+		var errInvalidArgument *domain.ErrInvalidArgument
+		var errDataNotFound *domain.ErrDataNotFound
+
+		if errors.As(err, &errInvalidArgument) {
+			h.logger.Error("invalid voucher", zap.Error(errInvalidArgument), zap.Any("request", request))
+			c.JSON(http.StatusConflict, gin.H{})
+			return
+		}
+
+		if errors.As(err, &errDataNotFound) {
+			h.logger.Error("data not found", zap.Error(errDataNotFound), zap.Any("request", request))
+			c.JSON(http.StatusConflict, gin.H{})
+			return
+		}
+
 		h.logger.Error("error when subscribing user to product", zap.Error(err), zap.Any("request", request))
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
@@ -59,8 +75,9 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 }
 
 func (h *SubscriptionHandler) Fetch(c *gin.Context) {
+	userID := c.Param("user-id")
 	subscriptionID := c.Param("subscription-id")
-	subscription, err := h.ss.Fetch(subscriptionID)
+	subscription, err := h.ss.Fetch(userID, subscriptionID)
 	if err != nil {
 		var dataNotFoundError *domain.ErrDataNotFound
 
@@ -99,6 +116,7 @@ func (h *SubscriptionHandler) List(c *gin.Context) {
 }
 
 func (h *SubscriptionHandler) Action(c *gin.Context) {
+	userID := c.Param("user-id")
 	subscriptionID := c.Param("subscription-id")
 	var request actionRequest
 
@@ -113,11 +131,11 @@ func (h *SubscriptionHandler) Action(c *gin.Context) {
 
 	switch request.Action {
 	case Pause:
-		subscription, err = h.ss.Pause(subscriptionID)
+		subscription, err = h.ss.Pause(userID, subscriptionID)
 	case Resume:
-		subscription, err = h.ss.Resume(subscriptionID)
+		subscription, err = h.ss.Resume(userID, subscriptionID)
 	case Unsubscribe:
-		subscription, err = h.ss.Unsubscribe(subscriptionID)
+		subscription, err = h.ss.Unsubscribe(userID, subscriptionID)
 	default:
 		h.logger.Debug("invalid action on subscription", zap.Error(err), zap.Any("request", request))
 		c.JSON(http.StatusBadRequest, gin.H{})
@@ -135,7 +153,7 @@ func (h *SubscriptionHandler) Action(c *gin.Context) {
 
 		if errors.Is(err, domain.ErrForbidden) {
 			h.logger.Debug("forbidden action", zap.Error(err), zap.Any("subscriptionId", subscriptionID), zap.Any("request", request))
-			c.JSON(http.StatusForbidden, gin.H{})
+			c.JSON(http.StatusLocked, gin.H{})
 			return
 		}
 
