@@ -146,13 +146,13 @@ func (h *SubscriptionHandler) Action(c *gin.Context) {
 		var errDataNotFound *domain.ErrDataNotFound
 
 		if errors.As(err, &errDataNotFound) {
-			h.logger.Debug("data not found", zap.Error(err), zap.Any("subscriptionId", subscriptionID))
+			h.logger.Debug("data not found", zap.Any("subscriptionId", subscriptionID), zap.Any("request", request))
 			c.JSON(http.StatusNotFound, gin.H{})
 			return
 		}
 
 		if errors.Is(err, domain.ErrForbidden) {
-			h.logger.Debug("forbidden action", zap.Error(err), zap.Any("subscriptionId", subscriptionID), zap.Any("request", request))
+			h.logger.Debug("forbidden action", zap.Any("subscriptionId", subscriptionID), zap.Any("request", request))
 			c.JSON(http.StatusLocked, gin.H{})
 			return
 		}

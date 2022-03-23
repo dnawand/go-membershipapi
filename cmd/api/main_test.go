@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dnawand/go-membershipapi/internal/handlers"
+	"github.com/dnawand/go-membershipapi/internal/mocks"
 	"github.com/dnawand/go-membershipapi/internal/storage"
 	"github.com/dnawand/go-membershipapi/pkg/app"
 	"github.com/dnawand/go-membershipapi/pkg/domain"
@@ -565,31 +566,8 @@ func truncateTables() {
 	db.Exec("TRUNCATE TABLE users CASCADE;")
 }
 
-type MockSubscriptionRepository struct {
-	SaveFunc   func(domain.User) (domain.Subscription, error)
-	GetFunc    func(subscriptionID string) (domain.Subscription, error)
-	ListFunc   func(userID string) ([]domain.Subscription, error)
-	UpdateFunc func(domain.Subscription, domain.ToUpdate) (domain.Subscription, error)
-}
-
-func (msr *MockSubscriptionRepository) Save(u domain.User) (domain.Subscription, error) {
-	return msr.SaveFunc(u)
-}
-
-func (msr *MockSubscriptionRepository) Get(subscriptionID string) (domain.Subscription, error) {
-	return msr.GetFunc(subscriptionID)
-}
-
-func (msr *MockSubscriptionRepository) List(userID string) ([]domain.Subscription, error) {
-	return msr.ListFunc(userID)
-}
-
-func (msr *MockSubscriptionRepository) Update(s domain.Subscription, toUpdate domain.ToUpdate) (domain.Subscription, error) {
-	return msr.UpdateFunc(s, toUpdate)
-}
-
 func repositoryAllowPauseOnTrial() domain.SubscriptionRepository {
-	return &MockSubscriptionRepository{
+	return &mocks.MockSubscriptionRepository{
 		SaveFunc: func(u domain.User) (domain.Subscription, error) {
 			return subscriptionRespository.Save(u)
 		},
