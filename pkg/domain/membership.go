@@ -56,9 +56,9 @@ type ProductPlan struct {
 
 type SubscriptionPlan struct {
 	*Plan
-	Voucher        Voucher `json:"voucher" gorm:"-:all"`
-	VoucherID      string  `json:"-" gorm:"type:uuid"`
-	SubscriptionID string  `json:"-" gorm:"type:uuid"`
+	Voucher        *Voucher `json:"voucher,omitempty" gorm:"-:all"`
+	VoucherID      string   `json:"-"`
+	SubscriptionID string   `json:"-" gorm:"type:uuid"`
 }
 
 type Voucher struct {
