@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/dnawand/go-membershipapi/internal/storage"
@@ -306,5 +307,10 @@ func addMonths(t time.Time, months int) time.Time {
 }
 
 func onTrial(trialDate time.Time) bool {
+	allowPauseOntrial := os.Getenv("ALLOW_PAUSE_ON_TRIAL")
+	if allowPauseOntrial != "" {
+		return false
+	}
+
 	return trialDate.After(time.Now())
 }
