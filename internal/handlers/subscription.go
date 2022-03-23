@@ -55,13 +55,13 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 		var errDataNotFound *domain.ErrDataNotFound
 
 		if errors.As(err, &errInvalidArgument) {
-			h.logger.Error("invalid voucher", zap.Error(errInvalidArgument), zap.Any("request", request))
+			h.logger.Error("invalid argument", zap.Any("msg", errInvalidArgument), zap.Any("request", request))
 			c.JSON(http.StatusConflict, gin.H{})
 			return
 		}
 
 		if errors.As(err, &errDataNotFound) {
-			h.logger.Error("data not found", zap.Error(errDataNotFound), zap.Any("request", request))
+			h.logger.Error("data not found", zap.Any("msg", errDataNotFound), zap.Any("request", request))
 			c.JSON(http.StatusConflict, gin.H{})
 			return
 		}

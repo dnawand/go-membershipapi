@@ -35,7 +35,7 @@ func (ss *SubscriptionService) Subscribe(
 ) (subscription domain.Subscription, err error) {
 	subscription, err = ss.buildSubscription(userID, productID, productPlanID, voucherID)
 	if err != nil {
-		return subscription, err
+		return domain.Subscription{}, err
 	}
 	if subscription.ID != "" {
 		return subscription, nil
@@ -196,7 +196,7 @@ func (ss *SubscriptionService) buildSubscription(
 	if voucherID != "" {
 		v, ok := ss.validateVoucher(voucherID)
 		if !ok {
-			return domain.Subscription{}, &domain.ErrInvalidArgument{Msg: "invalid voucher"}
+			return domain.Subscription{}, &domain.ErrInvalidArgument{Msg: "voucher"}
 		}
 		voucher = v
 	}

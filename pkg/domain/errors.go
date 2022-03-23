@@ -21,5 +21,5 @@ type ErrInvalidArgument struct {
 }
 
 func (e *ErrInvalidArgument) Error() string {
-	return fmt.Sprintf("%s data not found", e.Msg)
+	return fmt.Sprintf("%s is invalid", e.Msg)
 }
