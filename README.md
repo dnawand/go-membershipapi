@@ -54,3 +54,7 @@ Then, after the database is ready, run `make test`.
 You want to do it manually, use the commands:
 `docker-compose up -d databasetest`
 `DB_HOST=localhost DB_PORT=5433 DB_NAME=membership DB_USER=tester DB_PW=secretpw go test -v -cover -count=1 ./...`
+
+## Improvement
+
+Other componets could be added in general. Eg.: middlware for authentication, propagation of logging and context, etc.
