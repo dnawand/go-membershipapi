@@ -18,7 +18,6 @@ import (
 	"github.com/dnawand/go-membershipapi/pkg/domain"
 	"github.com/dnawand/go-membershipapi/pkg/repositories"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -56,9 +55,7 @@ func main() {
 	subscriptionHandler := handlers.NewSubscriptionHandler(logger, subscriptionService)
 
 	router := configRouter(userHandler, productHandler, subscriptionHandler)
-
-	server, fileServer := serversConfig(router)
-
+	server, fileServer := serverConfig(router)
 	ok := gracefulRun(server, fileServer, logger)
 	if !ok {
 		logger.Info("server forced to shutdown")
@@ -81,15 +78,15 @@ func configRouter(
 	router.POST("/products", productHandler.Create)
 	router.GET("/products/:product-id", productHandler.Fetch)
 	router.GET("/products", productHandler.List)
-	router.POST("/subscriptions", subscriptionHandler.Create)
-	router.GET("/subscriptions/:subscription-id", subscriptionHandler.Fetch)
+	router.POST("/users/:user-id/subscriptions", subscriptionHandler.Create)
+	router.GET("/users/:user-id/subscriptions/:subscription-id", subscriptionHandler.Fetch)
 	router.GET("/users/:user-id/subscriptions", subscriptionHandler.List)
-	router.PATCH("/subscriptions/:subscription-id", subscriptionHandler.Action)
+	router.PATCH("/users/:user-id/subscriptions/:subscription-id", subscriptionHandler.Action)
 
 	return router
 }
 
-func serversConfig(router *gin.Engine) (server *http.Server, fileServer *http.Server) {
+func serverConfig(router *gin.Engine) (server *http.Server, fileServer *http.Server) {
 	server = &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
@@ -146,33 +143,34 @@ func dbConfig() (*gorm.DB, error) {
 func loadVouchers() *storage.Store {
 	voucherStorage := storage.NewStore()
 
-	id, _ := uuid.NewRandom()
 	voucherFixedAmount := domain.Voucher{
-		ID:       id.String(),
+		ID:       "b86b4903-2043-4f71-b154-efec19fbc55a",
 		Type:     domain.VoucherFixedAmount,
-		Discount: "5",
+		Discount: "5.00",
 		IsActive: true,
 	}
-
-	id, _ = uuid.NewRandom()
 	voucherPercentage := domain.Voucher{
-		ID:       id.String(),
+		ID:       "4976ff21-a188-4bcc-97a0-2cf2278e9a6b",
 		Type:     domain.VoucherPercentage,
-		Discount: "10",
+		Discount: "10.10",
 		IsActive: true,
 	}
-
-	id, _ = uuid.NewRandom()
 	voucherInactive := domain.Voucher{
-		ID:       id.String(),
+		ID:       "18c4b4ea-6fce-4ee7-8d3b-a16047a8789e",
 		Type:     domain.VoucherPercentage,
-		Discount: "10",
+		Discount: "10.10",
 		IsActive: false,
 	}
 
 	voucherStorage.Save(voucherFixedAmount.ID, voucherFixedAmount)
 	voucherStorage.Save(voucherPercentage.ID, voucherPercentage)
 	voucherStorage.Save(voucherInactive.ID, voucherInactive)
+
+	fmt.Println("============================ Vouchers ============================")
+	fmt.Printf("FixedAmount: %s Discount: %s\n", voucherFixedAmount.ID, voucherFixedAmount.Discount)
+	fmt.Printf("Percentage: %s Discount: %s\n", voucherPercentage.ID, voucherPercentage.Discount)
+	fmt.Printf("Inactive: %s Discount: %s\n", voucherInactive.ID, voucherInactive.Discount)
+	fmt.Println("==================================================================")
 
 	return voucherStorage
 }
