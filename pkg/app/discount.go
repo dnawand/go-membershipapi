@@ -51,7 +51,7 @@ func (ds *DiscountService) ApplyDiscountOnTax(price domain.Money, tax domain.Mon
 func applyFixedAmount(money domain.Money, voucher domain.Voucher) (domain.Money, error) {
 	priceAmount, err := currency.NewAmount(money.Number, string(money.Code))
 	if err != nil {
-		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %v", err)}
+		return domain.Money{}, &domain.ErrInvalidArgument{Msg: err.Error()}
 	}
 
 	discountAmount, _ := currency.NewAmount(voucher.Discount, string(money.Code))
@@ -69,7 +69,7 @@ func applyFixedAmount(money domain.Money, voucher domain.Voucher) (domain.Money,
 func applyPercentage(money domain.Money, voucher domain.Voucher) (domain.Money, error) {
 	priceAmount, err := currency.NewAmount(money.Number, string(money.Code))
 	if err != nil {
-		return domain.Money{}, &domain.ErrInvalidArgument{Msg: fmt.Sprintf("invalid Money values: %v", err)}
+		return domain.Money{}, &domain.ErrInvalidArgument{Msg: err.Error()}
 	}
 
 	discountPercentageAmount, err := currency.NewAmount(voucher.Discount, string(money.Code))
@@ -99,7 +99,7 @@ func applyPercentage(money domain.Money, voucher domain.Voucher) (domain.Money, 
 func fixedAmountToPercentage(price domain.Money, tax domain.Money, voucher domain.Voucher) (domain.Voucher, error) {
 	priceAmount, err := currency.NewAmount(price.Number, string(price.Code))
 	if err != nil {
-		return domain.Voucher{}, fmt.Errorf("invalid tax values: %w", err)
+		return domain.Voucher{}, &domain.ErrInvalidArgument{Msg: err.Error()}
 	}
 
 	discountAmount, err := currency.NewAmount(voucher.Discount, string(price.Code))

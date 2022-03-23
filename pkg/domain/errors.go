@@ -17,9 +17,13 @@ func (e *ErrDataNotFound) Error() string {
 }
 
 type ErrInvalidArgument struct {
-	Msg string
+	Argument string
+	Msg      string
 }
 
 func (e *ErrInvalidArgument) Error() string {
-	return fmt.Sprintf("%s is invalid", e.Msg)
+	if e.Argument != "" {
+		return fmt.Sprintf("%s is invalid", e.Msg)
+	}
+	return e.Msg
 }
