@@ -5,6 +5,11 @@ services:
     build: .
     environment:
       GIN_MODE: release
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: membership
+      DB_USER: postgres
+      DB_PW: secretpw
     ports:
       - 8080:8080
       - 8081:8081
@@ -19,6 +24,15 @@ services:
       - 5432:5432
     volumes:
       - data-volume:/var/lib/postgresql/data
+
+  databasetest:
+    image: postgres:14.2-alpine3.15
+    environment:
+      POSTGRES_PASSWORD: secretpw
+      POSTGRES_USER: tester
+      POSTGRES_DB: membership
+    ports:
+      - 5433:5432
 
   pgadmin:
     image: dpage/pgadmin4:6.7
