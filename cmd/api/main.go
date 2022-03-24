@@ -19,7 +19,7 @@ import (
 	"github.com/dnawand/go-membershipapi/pkg/repositories"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -117,32 +117,11 @@ func zapConfig() *zap.Logger {
 }
 
 func dbConfig() (*gorm.DB, error) {
-	host, ok := os.LookupEnv("DB_HOST")
-	if !ok {
-		host = "localhost"
-	}
-	port, ok := os.LookupEnv("DB_PORT")
-	if !ok {
-		port = "5432"
-	}
-	name, ok := os.LookupEnv("DB_NAME")
-	if !ok {
-		name = "membership"
-	}
-	user, ok := os.LookupEnv("DB_USER")
-	if !ok {
-		user = "postgres"
-	}
-	password, ok := os.LookupEnv("DB_PW")
-	if !ok {
-		password = "secretpw"
-	}
-
-	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, port, name, user, password)
 	cfg := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	}
-	db, err := gorm.Open(postgres.Open(dsn), cfg)
+	db, err := gorm.Open(sqlite.Open(":memory:"), cfg)
+
 	if err != nil {
 		return nil, err
 	}

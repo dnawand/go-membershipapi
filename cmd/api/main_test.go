@@ -561,9 +561,9 @@ func createProducts() []domain.Product {
 }
 
 func truncateTables() {
-	db.Exec("TRUNCATE TABLE subscriptions CASCADE;")
-	db.Exec("TRUNCATE TABLE products CASCADE;")
-	db.Exec("TRUNCATE TABLE users CASCADE;")
+	db.Exec("DELETE FROM subscriptions;")
+	db.Exec("DELETE FROM products;")
+	db.Exec("DELETE FROM users;")
 }
 
 func repositoryAllowPauseOnTrial() domain.SubscriptionRepository {

@@ -1,5 +1,5 @@
 run:
-	docker-compose up -d --build database membershipapi
+	docker-compose up -d --build membershipapi
 
 stop:
 	docker-compose down
@@ -21,8 +21,8 @@ downdbtest:
 	docker-compose down --volumes
 
 test:
-	DB_HOST=localhost DB_PORT=5433 DB_NAME=membership DB_USER=tester DB_PW=secretpw go test -v -cover -count=1 ./...
+	go test -v -cover -count=1 ./...
 
 # Allows tests execution out of container. The default hard-coded config will be used.
 testlocal:
-	test -v -cover ./...
+	go test -v -cover ./...

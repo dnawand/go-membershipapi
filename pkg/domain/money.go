@@ -20,14 +20,14 @@ type Money struct {
 }
 
 func (m *Money) Scan(value interface{}) error {
-	str, ok := value.(string)
+	b, ok := value.([]byte) // SQLite stores string as bytes
 	if !ok {
-		log.Println("could not convert value from db into string")
-		return fmt.Errorf("could not convert value from db into string")
+		log.Println("could not convert value from db into bytes")
+		return fmt.Errorf("could not convert value from db into bytes")
 	}
 
 	money := Money{}
-	err := json.Unmarshal([]byte(str), &money)
+	err := json.Unmarshal(b, &money)
 	if err != nil {
 		log.Println("could not json into Money")
 		return fmt.Errorf("could not json into Money")
